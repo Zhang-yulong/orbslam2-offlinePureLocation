@@ -1,0 +1,76 @@
+
+运行程序：(可以通过修改CMakeLists.txt来使程序编译完后放在别的地方，而不是bin下面)
+1  cd ~/ORB-SLAM2_RGBD_DENSE_MAP-master
+2  ./bin/rgbd_tum Vocabulary/ORBvoc.txt Examples/RGB-D/TUM1.yaml data/rgbd_dataset_freiburg1_xyz data/rgbd_dataset_freiburg1_xyz/associations.txt 
+
+
+./bin/mono_tum Vocabulary/ORBvoc.txt Examples/Monocular/TUM1.yaml data/rgbd_dataset_freiburg1_desk2
+
+./bin/mono_tum Vocabulary/ORBvoc.txt Examples/Monocular/TUM1.yaml data/rgbd_dataset_freiburg1_xyz
+
+
+pcd查看：
+1  cd ~/ORB-SLAM2_RGBD_DENSE_MAP-master
+2  pcl_viewer result.pcd
+
+
+运行S2pro采集的数据：
+1.（尝试雷达投影的）
+./bin/rgbd_tum Vocabulary/ORBvoc.txt Examples/RGB-D/rgbd-S2pro-cut.yaml data/S2pro-with-lidar data/S2pro-with-lidar/associations.txt 
+
+B区：2.（这里的数据集放的与雷达时间戳相近的灰度图数据，数据量少，yaml文件的频率修改成10hz，该程序将数据保存map.bin）
+./bin/mono_tum Vocabulary/ORBvoc.txt Examples/Monocular/S2pro-cut.yaml data/S2pro-with-lidar-foshan-B
+./bin/mono_tum_load_map Vocabulary/ORBvoc.txt	Examples/Monocular/S2pro-cut.yaml data/S2pro-with-lidar-foshan-B     
+
+B区：3.（这里的数据集放
+./bin/mono_tum_load_map Vocabulary/ORBvoc.txt	Examples/Monocular/S2pro.yaml data/2024-10-18-foshan-new-B
+
+A区：1348: rgb/1725005747.021253.png
+./bin/mono_tum Vocabulary/ORBvoc.txt Examples/Monocular/S2pro-cut.yaml data/S2pro-with-lidar-foshan-A
+
+
+euroc数据集
+（双目）./bin/stereo_euroc Vocabulary/ORBvoc.txt Examples/Stereo/EuRoC.yaml data/V2_03_difficult/mav0/cam0/data data/V2_03_difficult/mav0/cam1/data Examples/Stereo/EuRoC_TimeStamps/V203.txt
+
+kitti数据集的
+（RGBD）./bin/rgbd_tum Vocabulary/ORBvoc.txt Examples/RGB-D/kitti03.yaml data/2011_09_26_drive_0001_sync data/2011_09_26_drive_0001_sync/associations.txt
+（双目）./bin/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI03.yaml /home/zyl/kitti-RAW-DATA/Kitti00-10/03
+
+新建一个加载保存下来的地图(5个参数)
+./bin/mono_tum_load_map Vocabulary/ORBvoc.txt Examples/Monocular/TUM1.yaml data/rgbd_dataset_freiburg1_xyz 
+
+
+一、gdb调试:
+1. cmake  -DCMAKE_BUILD_TYPE=Debug ..
+2. gdb bin/mono_tum_load_map
+3. （run Vocabulary/ORBvoc.txt Examples/Monocular/TUM1.yaml data/rgbd_dataset_freiburg1_xyz ./xyz_map.bin）
+4. run Vocabulary/ORBvoc.txt Examples/Monocular/TUM1.yaml data/rgbd_dataset_freiburg1_xyz
+二、不生成coredump
+https://blog.csdn.net/blocker7/article/details/123250209
+查了之后发现ubuntu预装了apport错误收集系统，sudo service apport stop之后就可以了。
+
+
+1.
+错误发生：
+
+addVertex: FATAL, a vertex with ID 513 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20567 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20573 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20578 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20582 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20585 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20596 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20636 has already been registered with this graph
+addVertex: FATAL, a vertex with ID 20639 has already been registered with this graph
+
+解决链接：https://blog.csdn.net/Super_GK/article/details/80722804 ： 
+这个错误来源于：进行G2O设置的时候添加节点时的编号冲突,这个错误看似不会影响运行,实际上是比较致命的.由于这个错误的存在会导致无法添加新的优化节点,造成优化部分信息缺失
+错误产生原因:载入离线地图之后在开始跟踪时,Frame,KeyFrame,MapPoint的编号与载入的离线地图中的编号冲突,导致新的信息无法添加入优化.
+解决办法:记录离线地图的最大编号,在进行载入后,更新Frame,KeyFrame,MapPoint的起始编号(最大编号+1),避免冲突.
+
+
+
+
+
+
+
